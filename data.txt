@@ -1,1 +1,0 @@
-ObservedDict(value={"users": ObservedDict(value={"746959257030623281": ObservedDict(value={"fishcoins": 2, "fishing": 0, "fishcoinspending": 0})})})
