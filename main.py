@@ -1,72 +1,84 @@
-import discord
-from discord.ext import commands
+# Imports
+import discord # Discord library
+from discord.ext import commands # Commands library
 import json
 import random
 import time
 import math
-from replit import db
+from replit import db # Database library
 import os
-from keep_alive import keep_alive
+from keep_alive import keep_alive # Imports keep_alive.py
 
+# Token
 token = os.environ['TOKEN']
 
-client = commands.Bot(command_prefix = ".")
+client = commands.Bot(command_prefix = ".") # Creates the object "client" and defines the command prefix. This variable will be used to control the bot.
 
-data = db["data"]
+data = db["data"] # All data will be stored in this variable.
 print(client)
 
+# Command to register a user
 @client.command()
 async def register(ctx):
-
     keys = []
+    
+    # Checks whether the author has an existing account. If so, it adds its user id to keys.
     for key in db["data"]["users"]:
         if key == str(ctx.message.author.id):
             keys.append(key)
 
-    if len(keys) == 0:
-        db["data"]["users"].update({str(ctx.message.author.id) : {}})
+    if len(keys) == 0: # "keys" will have a length of 0 if the author of the command doesn't have an existing account.
+        # Accounts are dictionaries in a list called "users".
+        db["data"]["users"].update({str(ctx.message.author.id) : {}}) # Adds an account dictionary to "users".
         user = db["data"]["users"][str(ctx.message.author.id)]
+        
+        # Adds base data.
         user.update({"fishcoins":1})
         user.update({"fishing":0})
-        user.update({"fishcoinspending":0})
+        user.update({"fishcoinspending":0}) # Fishcoins pending will be used in fishing
         await ctx.send("User Registered!")
     else:
         await ctx.send("You have already registered! Speak to your administrator to reset your account.")
 
+# Prints the number of fishcoins you have
 @client.command()
 async def fishcoins(ctx):
     user = db["data"]["users"][str(ctx.message.author.id)]
-    await ctx.send(str(client.get_emoji(831749967722577960)))
+    await ctx.send(str(client.get_emoji(831749967722577960))) # Prints fishcoin emoji
     await ctx.send("You currently have **"+str(user["fishcoins"])+"** Fishcoins!")
 
+# Pays target user an X amount of fishcoins
 @client.command()
 async def pay(ctx, user, amount):
+    # You don't need to read all this code, basically all it does is subtract your fishcoins and add the subtracted fishcoins to the target account
+    
     user = db["data"]["users"][str(ctx.message.author.id)]
-    if user["fishing"] == 0:
-        stufftopay = db["data"]["users"][str(user.replace("<", "").replace(">", "").replace("@", "").replace("!", ""))]["fishcoins"]
+    if user["fishing"] == 0: # Checks if user isn't fishing
+        targetuserfishcoins = db["data"]["users"][str(user.replace("<", "").replace(">", "").replace("@", "").replace("!", ""))]["fishcoins"]
         yourfishcoins = user["fishcoins"]
 
-        if str(str(user.replace("<", "").replace(">", "").replace("@", "").replace("!", ""))) == str(ctx.message.author.id):
+        if str(str(user.replace("<", "").replace(">", "").replace("@", "").replace("!", ""))) == str(ctx.message.author.id): # Another infinite fishcoin glitch found by gubs (thanks!)
             await ctx.send("You cannot pay yourself!")
-        elif (yourfishcoins - int(amount)) < 0:
+        elif (yourfishcoins - int(amount)) < 0: # Checks if you can afford the transaction
             await ctx.send("You cannot afford this!")
-        elif "-" in str(amount):
+        elif "-" in str(amount): # Infinite fishcoin glitch with negative numbers found by gubs (thanks!)
             await ctx.send("You cannot do this!")
-        else:
-            await ctx.send("https://i.postimg.cc/SKPQq45f/fishcoin-transaction.png")
+        else: # Command has passed all failsafes
+            await ctx.send("https://i.postimg.cc/SKPQq45f/fishcoin-transaction.png") # Prints image
             await ctx.send("**Transaction Completed!**")
-            user["fishcoins"] = yourfishcoins - int(amount)
-            db["data"]["users"][str(user.replace("<", "").replace(">", "").replace("@", "").replace("!", ""))]["fishcoins"] = stufftopay + int(amount)
+            user["fishcoins"] = yourfishcoins - int(amount) # Subtracts "amount" from your account
+            db["data"]["users"][str(user.replace("<", "").replace(">", "").replace("@", "").replace("!", ""))]["fishcoins"] = targetuserfishcoins + int(amount) # Adds "amount" to target account
             await ctx.send("You cannot get your money back, btw.")
     else:
         await ctx.send("You are fishing at the moment! All Fishcoin transactions are restricted until you claim your fishcoins")
 
-
+# Prints all users and their fishcoins
 @client.command()
 async def users(ctx):
     for x in db["data"]["users"]:
         await ctx.send(f'<@{x}>: {str(db["data"]["users"][x]["fishcoins"])}')
 
+# Gambling
 @client.command()
 async def dice(ctx, coins):
     user = db["data"]["users"][str(ctx.message.author.id)]
